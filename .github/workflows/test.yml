@@ -1,0 +1,237 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: List directory structure
+        run: find . -type f -name "*.py" | sort
+      - name: Create Python files
+        run: |
+          # Create the files directly from the workflow
+          cat > parentheses.py << 'EOL'
+          from functools import lru_cache
+
+          def countWellFormedParenthesis(nCouples: int) -> int:
+              @lru_cache(maxsize=None)
+              def catalan(n):
+                  if n == 0:
+                      return 1
+                  res = 0
+                  for i in range(n):
+                      res += catalan(i) * catalan(n - i - 1)
+                  return res
+              return catalan(nCouples)
+          EOL
+          
+          cat > test_parentheses.py << 'EOL'
+          import unittest
+          from parentheses import countWellFormedParenthesis
+
+          class TestParentheses(unittest.TestCase):
+              def test_basic(self):
+                  self.assertEqual(countWellFormedParenthesis(1), 1)
+                  self.assertEqual(countWellFormedParenthesis(2), 2)
+                  self.assertEqual(countWellFormedParenthesis(3), 5)
+                  self.assertEqual(countWellFormedParenthesis(4), 14)
+                  self.assertEqual(countWellFormedParenthesis(5), 42)
+                  self.assertEqual(countWellFormedParenthesis(15), 9694845)
+
+              def test_performance(self):
+                  import time
+                  start = time.time()
+                  result = countWellFormedParenthesis(15)
+                  duration = time.time() - start
+                  self.assertTrue(duration < 1.0)
+                  self.assertEqual(result, 9694845)
+
+          if __name__ == '__main__':
+              unittest.main()
+          EOL
+      - name: Run Python tests
+        run: python -m unittest test_parentheses.py
+
+  test-javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: List directory structure
+        run: find . -type f -name "*.js" | sort
+      - name: Create JavaScript files
+        run: |
+          # Create the files directly from the workflow
+          cat > parentheses.js << 'EOL'
+          function countWellFormedParenthesis(n) {
+              const memo = new Array(n + 1).fill(0);
+              memo[0] = 1;
+              for (let i = 1; i <= n; i++) {
+                  for (let j = 0; j < i; j++) {
+                      memo[i] += memo[j] * memo[i - j - 1];
+                  }
+              }
+              return memo[n];
+          }
+
+          module.exports = { countWellFormedParenthesis };
+          EOL
+          
+          cat > parentheses.test.js << 'EOL'
+          const assert = require('assert');
+          const { countWellFormedParenthesis } = require('./parentheses.js');
+
+          describe('Parentheses', function () {
+              it('Basic cases', function () {
+                  assert.strictEqual(countWellFormedParenthesis(1), 1);
+                  assert.strictEqual(countWellFormedParenthesis(3), 5);
+                  assert.strictEqual(countWellFormedParenthesis(5), 42);
+                  assert.strictEqual(countWellFormedParenthesis(15), 9694845);
+              });
+
+              it('Performance test', function () {
+                  const start = Date.now();
+                  const result = countWellFormedParenthesis(15);
+                  const duration = Date.now() - start;
+                  assert.ok(duration < 1000);
+                  assert.strictEqual(result, 9694845);
+              });
+          });
+          EOL
+          
+          cat > package.json << 'EOL'
+          {
+            "name": "well-formed-parenthesis",
+            "version": "1.0.0",
+            "description": "Count well-formed parentheses",
+            "main": "parentheses.js",
+            "scripts": {
+              "test": "mocha parentheses.test.js"
+            }
+          }
+          EOL
+      - name: Install dependencies
+        run: npm install mocha
+      - name: Run JS tests
+        run: npx mocha parentheses.test.js
+
+  test-java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: List directory structure
+        run: find . -type f -name "*.java" | sort
+      - name: Create Java files
+        run: |
+          # Create the directory structure
+          mkdir -p src/main/java/org/example
+          mkdir -p src/test/java/org/example
+          
+          # Create the files
+          cat > src/main/java/org/example/Parentheses.java << 'EOL'
+          package org.example;
+
+          public class Parentheses {
+              public static int countWellFormedParenthesis(int n) {
+                  int[] dp = new int[n + 1];
+                  dp[0] = 1;
+                  for (int i = 1; i <= n; i++) {
+                      for (int j = 0; j < i; j++) {
+                          dp[i] += dp[j] * dp[i - j - 1];
+                      }
+                  }
+                  return dp[n];
+              }
+          }
+          EOL
+          
+          cat > src/test/java/org/example/ParenthesesTest.java << 'EOL'
+          package org.example;
+
+          import org.junit.jupiter.api.Test;
+          import static org.junit.jupiter.api.Assertions.*;
+
+          public class ParenthesesTest {
+              @Test
+              void basicTests() {
+                  assertEquals(1, Parentheses.countWellFormedParenthesis(1));
+                  assertEquals(5, Parentheses.countWellFormedParenthesis(3));
+                  assertEquals(42, Parentheses.countWellFormedParenthesis(5));
+                  assertEquals(9694845, Parentheses.countWellFormedParenthesis(15));
+              }
+
+              @Test
+              void performanceTest() {
+                  long start = System.currentTimeMillis();
+                  int result = Parentheses.countWellFormedParenthesis(15);
+                  long duration = System.currentTimeMillis() - start;
+                  assertTrue(duration < 1000);
+                  assertEquals(9694845, result);
+              }
+          }
+          EOL
+          
+          # Create a simple Maven pom.xml
+          cat > pom.xml << 'EOL'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <project xmlns="http://maven.apache.org/POM/4.0.0"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+              <modelVersion>4.0.0</modelVersion>
+
+              <groupId>org.example</groupId>
+              <artifactId>well-formed-parenthesis</artifactId>
+              <version>1.0-SNAPSHOT</version>
+
+              <properties>
+                  <maven.compiler.source>17</maven.compiler.source>
+                  <maven.compiler.target>17</maven.compiler.target>
+                  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+              </properties>
+
+              <dependencies>
+                  <dependency>
+                      <groupId>org.junit.jupiter</groupId>
+                      <artifactId>junit-jupiter-api</artifactId>
+                      <version>5.9.2</version>
+                      <scope>test</scope>
+                  </dependency>
+                  <dependency>
+                      <groupId>org.junit.jupiter</groupId>
+                      <artifactId>junit-jupiter-engine</artifactId>
+                      <version>5.9.2</version>
+                      <scope>test</scope>
+                  </dependency>
+              </dependencies>
+
+              <build>
+                  <plugins>
+                      <plugin>
+                          <groupId>org.apache.maven.plugins</groupId>
+                          <artifactId>maven-surefire-plugin</artifactId>
+                          <version>3.0.0-M7</version>
+                      </plugin>
+                  </plugins>
+              </build>
+          </project>
+          EOL
+      - name: Build and run Java tests
+        run: mvn test
