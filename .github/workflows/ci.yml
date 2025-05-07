@@ -15,8 +15,15 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
+      - name: List directory structure
+        run: find . -type f | grep -v ".git" # Debug to see actual file structure
       - name: Run Python tests
-        run: python3 -m unittest discover -s ./python -p "test_*.py"
+        run: |
+          # Assume the files are in the root directory
+          python -m unittest test_parentheses.py
+          
+          # Alternative if files are in a directory
+          # cd python && python -m unittest test_parentheses.py
 
   test-javascript:
     runs-on: ubuntu-latest
@@ -26,10 +33,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: List directory structure
+        run: find . -type f | grep -v ".git" # Debug to see actual file structure
       - name: Install dependencies
-        run: cd javascript && npm install
+        run: |
+          # Install mocha if it's not already in package.json
+          npm install mocha
+          
+          # Alternative if files are in a directory
+          # cd javascript && npm install
       - name: Run JS tests
-        run: cd javascript && npm test
+        run: |
+          # Assume the files are in the root directory
+          npx mocha parentheses.test.js
+          
+          # Alternative if files are in a directory
+          # cd javascript && npm test
 
   test-java:
     runs-on: ubuntu-latest
@@ -40,7 +59,23 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: List directory structure
+        run: find . -type f | grep -v ".git" # Debug to see actual file structure
       - name: Compile
-        run: javac java/src/*.java
+        run: |
+          # First, create a directory structure for Java files if needed
+          mkdir -p org/example
+          
+          # Move Java files to the correct package structure if needed
+          # find . -name "*.java" -exec cp {} org/example/ \;
+          
+          # Compile
+          javac -cp .:junit-platform-console-standalone.jar org/example/*.java
+          
+          # Alternative if files are in proper directories already
+          # javac -cp .:junit-platform-console-standalone.jar *.java
+      - name: Download JUnit Platform
+        run: wget https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.8.2/junit-platform-console-standalone-1.8.2.jar -O junit-platform-console-standalone.jar
       - name: Run Java tests
-        run: java -cp java/src org.junit.platform.console.ConsoleLauncher --scan-classpath
+        run: |
+          java -jar junit-platform-console-standalone.jar --scan-class-path --class-path .:junit-platform-console-standalone.jar
