@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { countWellFormedParenthesis } = require('./parentheses');
+const { countWellFormedParenthesis } = require('./parentheses.js');
 
 describe('Parentheses', function () {
     it('Basic cases', function () {

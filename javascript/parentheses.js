@@ -1,4 +1,4 @@
-module.exports.countWellFormedParenthesis = function (n) {
+function countWellFormedParenthesis(n) {
     const memo = new Array(n + 1).fill(0);
     memo[0] = 1;
     for (let i = 1; i <= n; i++) {
